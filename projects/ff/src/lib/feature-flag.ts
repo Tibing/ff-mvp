@@ -1,23 +1,31 @@
-const substitutions: Map<string, Map<any, any>> = new Map();
-const activeFeatures = [];
+import { Type } from '@angular/core';
+
+const rawSubstitutions: Map<string, [Type<any>, Type<any>][]> = new Map();
+const substitutions: Map<Type<any>, Type<any>> = new Map();
 type NgDef = 'ngComponentDef' | 'ngInjectableDef';
 
-export function activateFeature(feature: string) {
-  activeFeatures.push(feature);
-}
-
 export function activateFeatures(features: string[]) {
-  activeFeatures.push(...features);
+  recalculateSubstitutions(features);
 }
 
 export function flag(feature: string, sub: [any, any][]) {
-  substitutions.set(feature, new Map(sub));
+  rawSubstitutions.set(feature, sub);
 }
 
 export const Substitutable = (cmpType) => {
   const ngDef: NgDef = findNgDef(cmpType);
   return makeSubstitutable(cmpType, ngDef);
 };
+
+function recalculateSubstitutions(features: string[]) {
+  for (const [feature, substitution] of rawSubstitutions.entries()) {
+    if (features.includes(feature)) {
+      for (const [a, b] of substitution) {
+        substitutions.set(a, b);
+      }
+    }
+  }
+}
 
 function findNgDef(cmpType: any): NgDef {
   if (cmpType.ngComponentDef) {
@@ -32,25 +40,18 @@ function findNgDef(cmpType: any): NgDef {
 // Might be slow because of proxies and searching for the substitution per each operation
 function makeSubstitutable(cmpType: any, ngDef: NgDef) {
   const def = cmpType[ngDef];
-  cmpType[ngDef] = new Proxy(def, {
-    get(target: any, prop: string | number | symbol): any {
-      const substitution = findSubstitution(cmpType);
+
+  Object.defineProperty(cmpType, ngDef, {
+    get(): any {
+      const substitution = substitutions.get(cmpType);
 
       if (substitution) {
-        return substitution[ngDef][prop];
+        return substitution[ngDef];
       } else {
-        return target[prop];
+        return def;
       }
     },
   });
 
   return cmpType;
-}
-
-function findSubstitution(x: any): any {
-  for (const [feature, sub] of substitutions.entries()) {
-    if (activeFeatures.includes(feature) && sub.has(x)) {
-      return sub.get(x);
-    }
-  }
 }
