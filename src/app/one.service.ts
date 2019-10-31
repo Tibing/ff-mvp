@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Substitutable } from './feature-flag';
+import { Substitutable } from 'ff';
 
 @Substitutable
 @Injectable({ providedIn: 'root' })

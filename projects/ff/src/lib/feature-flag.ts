@@ -6,7 +6,11 @@ export function activateFeature(feature: string) {
   activeFeatures.push(feature);
 }
 
-export function flag(feature: string, sub: [[any, any]]) {
+export function activateFeatures(features: string[]) {
+  activeFeatures.push(...features);
+}
+
+export function flag(feature: string, sub: [any, any][]) {
   substitutions.set(feature, new Map(sub));
 }
 

@@ -5,14 +5,14 @@ import { OneService } from './one.service';
 
 @Substitutable
 @Component({
-  selector: 'app-one',
-  template: `one`,
+  selector: 'app-lazy',
+  template: `lazy three`,
 })
-export class OneComponent implements OnInit {
+export class LazyThreeComponent implements OnInit {
   constructor(private service: OneService) {
   }
 
   ngOnInit() {
-    this.service.log('one');
+    this.service.log('lazy three');
   }
 }

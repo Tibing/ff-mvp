@@ -1,22 +1,23 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { activeFeaturesLoader, flag } from 'ff';
 
 import { AppComponent } from './app.component';
 import { OneComponent } from './one.component';
-import { activateFeature, flag } from './feature-flag';
 import { TwoComponent } from './two.component';
 import { TwoService } from './two.service';
 import { OneService } from './one.service';
+import { RouterModule } from '@angular/router';
+import { LazyComponent } from './lazy.module';
+import { LazyThreeComponent } from './three.component';
 
-flag('two components', [
+flag('one', [
   [OneComponent, TwoComponent],
+  [LazyComponent, LazyThreeComponent],
 ]);
-activateFeature('two components');
-flag('two services', [
+flag('two', [
   [OneService, TwoService],
 ]);
-
-activateFeature('two services');
 
 @NgModule({
   declarations: [
@@ -25,8 +26,16 @@ activateFeature('two services');
   ],
   imports: [
     BrowserModule,
+    RouterModule.forRoot([
+      {
+        path: 'child',
+        loadChildren: () => import('./lazy.module').then(mod => mod.LazyModule),
+      },
+    ]),
   ],
-  providers: [],
+  providers: [
+    activeFeaturesLoader(),
+  ],
   bootstrap: [AppComponent],
 })
 export class AppModule {
