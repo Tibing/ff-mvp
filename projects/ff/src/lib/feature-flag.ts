@@ -2,7 +2,7 @@ import { Type } from '@angular/core';
 
 const rawSubstitutions: Map<string, [Type<any>, Type<any>][]> = new Map();
 const substitutions: Map<Type<any>, Type<any>> = new Map();
-type NgDef = 'ngComponentDef' | 'ngInjectableDef';
+type NgDef = 'ngComponentDef' | 'ngInjectableDef' | 'ngDirectiveDef' | 'ngPipeDef';
 
 export function activateFeatures(features: string[]) {
   recalculateSubstitutions(features);
@@ -13,8 +13,8 @@ export function flag(feature: string, sub: [any, any][]) {
 }
 
 export const Substitutable = (cmpType) => {
-  const ngDef: NgDef = findNgDef(cmpType);
-  return makeSubstitutable(cmpType, ngDef);
+  const ngDefs: NgDef[] = findNgDefs(cmpType);
+  return makeSubstitutable(cmpType, ngDefs);
 };
 
 function recalculateSubstitutions(features: string[]) {
@@ -27,31 +27,49 @@ function recalculateSubstitutions(features: string[]) {
   }
 }
 
-function findNgDef(cmpType: any): NgDef {
+function findNgDefs(cmpType: any): NgDef[] {
+  const defs: NgDef[] = [];
+
   if (cmpType.ngComponentDef) {
-    return 'ngComponentDef';
-  } else if (cmpType.ngInjectableDef) {
-    return 'ngInjectableDef';
+    defs.push('ngComponentDef');
   }
 
-  throw new Error('ERROR');
+  if (cmpType.ngInjectableDef) {
+    defs.push('ngInjectableDef');
+  }
+
+  if (cmpType.ngDirectiveDef) {
+    defs.push('ngDirectiveDef');
+  }
+
+  if (cmpType.ngPipeDef) {
+    defs.push('ngPipeDef');
+  }
+
+  if (!defs.length) {
+    throw new Error(`No def in provided type: ${cmpType}`);
+  }
+
+  return defs;
 }
 
 // Might be slow because of proxies and searching for the substitution per each operation
-function makeSubstitutable(cmpType: any, ngDef: NgDef) {
-  const def = cmpType[ngDef];
+function makeSubstitutable(cmpType: any, ngDefs: NgDef[]) {
+  for (const ngDef of ngDefs) {
+    const def = cmpType[ngDef];
 
-  Object.defineProperty(cmpType, ngDef, {
-    get(): any {
-      const substitution = substitutions.get(cmpType);
+    Object.defineProperty(cmpType, ngDef, {
+      get(): any {
+        const substitution = substitutions.get(cmpType);
 
-      if (substitution) {
-        return substitution[ngDef];
-      } else {
-        return def;
-      }
-    },
-  });
+        if (substitution) {
+          return substitution[ngDef];
+        } else {
+          return def;
+        }
+      },
+    });
+  }
 
   return cmpType;
 }
